@@ -97,6 +97,7 @@ type FTP struct {
 	file          string
 	welcome       string
 	passiveserver bool
+	originalhost  bool
 	logger        *log.Logger
 	//timeoutInMsec int64
 	textprotoConn *textproto.Conn
@@ -156,6 +157,7 @@ func NewFTP(debuglevel int) *FTP {
 		logger:    logger,
 		//timeoutInMsec: DefaultTimeoutInMsec,
 		passiveserver: true,
+		originalhost:  false,
 	}
 	return ftp
 }
@@ -213,6 +215,10 @@ func (ftp *FTP) Connect(host string, port int, socks5ProxyUrl string) (resp *Res
 // With a true statement use the PASV command.
 func (ftp *FTP) SetPassive(ispassive bool) {
 	ftp.passiveserver = ispassive
+}
+
+func (ftp *FTP) SetOriginalHost(oh bool) {
+	ftp.originalhost = oh
 }
 
 // Login logs on to the server.
@@ -763,7 +769,7 @@ func (ftp *FTP) transferCmd(cmd FtpCmd, params ...string) (conn net.Conn, size i
 	ftp.writeInfo("Server is passive:", ftp.passiveserver)
 	if ftp.passiveserver {
 		host, port, error := ftp.makePasv()
-		if ftp.conn.LocalAddr().Network() != host {
+		if ftp.originalhost && (ftp.conn.LocalAddr().Network() != host) {
 			ftp.writeInfo("The remote server answered with a different host address, which is", host, ", using the orginal host instead:", ftp.Host)
 			host = ftp.Host
 		}
